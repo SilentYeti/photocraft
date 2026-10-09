@@ -31,3 +31,9 @@ Original synthetic fixture, captured with the new build. These show before openi
 | ![Before opening the synthetic PDN](https://raw.githubusercontent.com/SilentYeti/photocraft/c40a22fe5fb57ca606ca64219328c503a5ce6607/before-open.png) | ![Synthetic PDN imported as editable layers](https://raw.githubusercontent.com/SilentYeti/photocraft/c40a22fe5fb57ca606ca64219328c503a5ce6607/after-import.png) |
 
 [Review screenshot attribution](https://github.com/SilentYeti/photocraft/blob/c40a22fe5fb57ca606ca64219328c503a5ce6607/ATTRIBUTION.md). Screenshot artifacts are on a separate fork branch and are not part of the application diff.
+
+### Upstream sync (2026-10-09)
+
+Merged upstream through `a342ab88209be38040f8bb0c4e21ae6355d6cb33`; feature head is `26487b48663c91a1bc030099a35d91e4a28e8146`. Both the original PDN commit and upstream history remain ancestors, with no force push. The original work is also preserved at `backup/pdn-before-upstream-sync`.
+
+Adapted PDN imports to upstream's read-only-source flags and shared blend selector. After the first merge, PDN/color tests, real-file editing/native persistence, Save As, half-float GPU XOR, native app checks, Clippy and dependency layering pass. After the final five upstream commits, native desktop/CLI/web checks and the real-file editing/native-save protection test pass. The broad regression run and release build above predate this sync; full regression, wasm, external corpus and full float GPU parity were not repeated.
