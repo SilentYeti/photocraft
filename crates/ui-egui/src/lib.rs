@@ -46,6 +46,7 @@ pub mod comps_ui;
 pub mod control;
 pub mod credits;
 pub mod crop_ui;
+pub mod dialog_blend_ui;
 pub mod dialogs;
 pub mod direct_select;
 pub mod discard_ui;
@@ -55,11 +56,14 @@ pub mod dock;
 pub mod enable_rules;
 pub mod eraser_ui;
 pub mod export_dialog;
+pub mod eyedropper_ui;
 pub mod file_dialog;
 pub mod file_open;
 pub mod file_ui;
 pub mod fill_ui;
 pub mod filter_dialog;
+#[cfg(not(target_arch = "wasm32"))]
+mod filter_preview_worker;
 pub mod gallery_ui;
 pub mod gpu_canvas;
 pub mod gpu_status;
@@ -99,6 +103,7 @@ pub mod panels;
 pub mod parity;
 pub mod patch_preview;
 pub mod perspective_ui;
+pub mod pixel_grid;
 pub mod plugin_ui;
 pub mod point_curve;
 pub mod prefs_ui;
@@ -115,6 +120,7 @@ pub mod rotate_view;
 pub mod rulers;
 pub mod screen_picker;
 pub mod scrollbars;
+pub mod served_fonts;
 pub mod shortcut_dispatch;
 pub mod shortcuts;
 mod sizing;
@@ -124,6 +130,7 @@ pub mod snap_ui;
 pub mod state;
 pub mod stroke_constraint;
 pub mod stroke_trail;
+pub mod stroke_ui;
 pub mod stylus;
 pub mod swatches_ui;
 mod tab_strip;
@@ -147,6 +154,7 @@ pub mod wide_angle_ui;
 pub mod widgets;
 pub mod work_area;
 pub mod workspace_ui;
+pub mod zoom_levels;
 pub mod zoom_tool;
 
 use std::collections::HashMap;
@@ -233,6 +241,8 @@ pub struct Recovered {
 pub type AppendTextFn = Box<dyn FnMut(&str, &str) -> Result<(), String>>;
 /// Requests from the operating system since the last call (see [`OsEvent`]).
 pub type OsEventsFn = Box<dyn FnMut() -> Vec<OsEvent>>;
+/// Ends the app the platform's own way (see [`Services::quit`]).
+pub type QuitFn = Box<dyn FnMut()>;
 /// Where the OS pointer is now, in egui points within the window; `None` when unknown.
 pub type CursorPosFn = Box<dyn FnMut(&egui::Context) -> Option<egui::Pos2>>;
 
@@ -300,11 +310,19 @@ pub struct Services {
     pub read_displays: Option<monitor_status::ReadDisplaysFn>,
     /// The macOS menu bar, when the desktop app installed one; the in-window menus are hidden then.
     pub native_menu: Option<native_menu::NativeMenu>,
+    /// Ends the app once leaving is settled (nothing unsaved, or the prompt answered), instead of
+    /// letting eframe close the window. macOS: `-[NSApplication terminate:]`. Closing the window
+    /// while AppKit's run loop is still going crashes or hangs Touch Bar Macs (#1575, #1458).
+    /// Without one, eframe closes the window and the app ends with it.
+    pub quit: Option<QuitFn>,
 }
 
 /// A document histogram being computed off the UI thread: (document, revision, receiver of
 /// (document, compute ms, histograms)).
 pub(crate) type HistJob = (DocId, u64, std::sync::mpsc::Receiver<(DocId, f64, std::sync::Arc<tone::Histograms>)>);
+
+/// The Info panel's cached sample: pixel x, y, document revision and Eyedropper Sample Size.
+type InfoSampleKey = (i32, i32, u64, u32);
 
 pub struct PhotocraftApp {
     pub session: Session,
@@ -370,6 +388,9 @@ pub struct PhotocraftApp {
     /// Windows and Linux: the window has no OS decorations and the app's top bar is the title bar
     /// (caption buttons, window dragging and edge resizing, `titlebar`).
     pub custom_titlebar: bool,
+    /// Last window title sent to the OS (`ViewportCommand::Title`, see `panels::sync_window_title`):
+    /// sent again only when it changes, so idle frames don't spam the backend.
+    last_window_title: String,
     fonts_ready: bool,
     /// Screen rect of the main canvas last frame (for overlays and the navigator).
     pub last_canvas_rect: egui::Rect,
@@ -396,6 +417,8 @@ pub struct PhotocraftApp {
     /// Selection outline cache: (doc, revision, segments).
     /// Live filter preview (proxy document with the filter applied).
     pub(crate) filter_preview: Option<filter_dialog::FilterPreview>,
+    #[cfg(not(target_arch = "wasm32"))]
+    filter_preview_worker: filter_preview_worker::Worker,
     /// Select › Color Range dialog preview (proxy document + mask / image textures).
     pub(crate) color_range: Option<color_range_ui::Preview>,
     /// Image › Adjustments dialog preview through a temporary clipped adjustment layer.
@@ -442,8 +465,8 @@ pub struct PhotocraftApp {
     /// Pointer position over the canvas (document px), for the Info panel and status bar.
     pub(crate) hover_doc: Option<[f64; 2]>,
     pub(crate) clone_preview: Option<crate::canvas::ClonePreviewCache>,
-    /// Info panel sample cache: ((x, y, revision), composite RGBA).
-    info_sample: Option<((i32, i32, u64), [f32; 4])>,
+    /// Info panel sample cache: ((x, y, revision, Sample Size), composite RGBA).
+    info_sample: Option<(InfoSampleKey, [f32; 4])>,
     /// Guide being dragged (from a ruler or with the Move tool).
     pub(crate) guide_drag: Option<rulers::GuideDrag>,
     /// Crop tool gesture in progress (see `crop_ui`).
@@ -521,6 +544,7 @@ impl PhotocraftApp {
             styled: false,
             integrated_titlebar: false,
             custom_titlebar: false,
+            last_window_title: String::new(),
             fonts_ready: false,
             last_canvas_rect: egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)),
             drop_canvas_rect: None,
@@ -536,6 +560,8 @@ impl PhotocraftApp {
             proxy_uploaded: None,
             outline_cache: None,
             filter_preview: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            filter_preview_worker: Default::default(),
             color_range: None,
             adjust_preview: None,
             synthetic: Vec::new(),
@@ -816,6 +842,9 @@ impl PhotocraftApp {
         // Edit › Color Settings policies apply on open; mismatches can ask what to do.
         // No path yet: a bare name isn't a location to save back to (`open_file` sets the path).
         let (_, color) = self.session.open_document(doc, None);
+        if let Some(st) = self.session.active_mut() {
+            st.source_read_only = photocraft_io::affinity::is_affinity(bytes);
+        }
         self.sync_views();
         self.ui.status = format!("Opened {name}");
         self.ui.status_error = false;
@@ -861,6 +890,9 @@ impl PhotocraftApp {
         let (doc, warnings) = import(name, bytes)?;
         // The caller records the path it read from.
         self.session.add_document(doc, None);
+        if let Some(st) = self.session.active_mut() {
+            st.source_read_only = photocraft_io::affinity::is_affinity(bytes);
+        }
         self.sync_views();
         self.ui.status = format!("Opened {name}");
         self.ui.status_error = false;
@@ -872,6 +904,9 @@ impl PhotocraftApp {
     /// continues on a later frame, see `file_dialog`). Returns `{"path", "warnings"}` (the export
     /// warnings are also shown to the user).
     pub fn save_as(&mut self, path: Option<String>) -> Result<Value, String> {
+        if self.tiff_options.is_some() {
+            return Err("Answer TIFF Options before starting another save".into());
+        }
         // Edit Contents documents save back into their smart object.
         if path.is_none() && self.session.is_enabled("layer.smartObjects.saveContents") {
             self.run("layer.smartObjects.saveContents", serde_json::json!({}))?;
@@ -907,28 +942,30 @@ impl PhotocraftApp {
         // A layered TIFF asks about its layers first (Preferences › File Handling); the save
         // continues from the prompt.
         if tiff_options_ui::wants_prompt(self, &path) {
-            tiff_options_ui::park(self, path.clone());
+            tiff_options_ui::park(self, path.clone())?;
             return Ok(serde_json::json!({"path": path, "warnings": []}));
         }
-        let (path, warnings) = self.write_document(path, &ExportSettings::default())?;
+        let (path, warnings) = self.write_document(path, &ExportSettings::default(), false)?;
         Ok(serde_json::json!({"path": path, "warnings": warnings}))
     }
 
     /// Encodes the active document with `settings` and writes it to `path`, which becomes the
-    /// document's path. Returns the path and the export warnings (also shown to the user).
-    pub(crate) fn write_document(&mut self, path: String, settings: &ExportSettings) -> Result<(String, Vec<String>), String> {
+    /// document's path unless saving a copy. A copy leaves the original's path and unsaved
+    /// changes intact. Returns the path and the export warnings (also shown to the user).
+    pub(crate) fn write_document(&mut self, path: String, settings: &ExportSettings, copy: bool) -> Result<(String, Vec<String>), String> {
         let st = self.session.active().ok_or("no document")?;
         let export = self.services.export.as_ref().ok_or("no exporter configured")?;
         let (bytes, warnings) = export(&st.doc, &path, settings)?;
         let write = self.services.write.as_mut().ok_or("no writer configured")?;
         write(&path, &bytes)?;
-        if let Some(st) = self.session.active_mut() {
+        if !copy && let Some(st) = self.session.active_mut() {
             st.path = Some(path.clone());
             st.saved_revision = st.revision;
         }
         self.ui.status = format!("Saved {path}");
         // "Save Document" script events and File › Generate › Image Assets.
-        if let Some(i) = self.session.active_index()
+        if !copy
+            && let Some(i) = self.session.active_index()
             && let Some(r) = photocraft_engine::automate_cmds::document_saved(&mut self.session, i)
         {
             self.ui.status = format!("Saved {path}; {} image assets in {}", r["files"].as_array().map_or(0, Vec::len), r["dir"].as_str().unwrap_or(""));
@@ -1073,6 +1110,8 @@ impl eframe::App for PhotocraftApp {
         // shortcuts see Esc).
         if !screen_picker::tick(self, ctx) {
             jobs_ui::tick(self, ctx);
+            #[cfg(not(target_arch = "wasm32"))]
+            filter_preview_worker::discard_closed(self);
             shortcuts::handle(self, ctx);
         }
         let arrived: Vec<(String, Vec<u8>)> =
@@ -1126,6 +1165,9 @@ impl eframe::App for PhotocraftApp {
             return;
         }
         let t0 = gpu_canvas::now_ms();
+        // Each painting tool keeps its own brush (#218), so switch the active tool's brush in
+        // before anything this frame reads it (the cursor, the options bar, a stroke).
+        paint_mouse::sync_tool_brush(self);
         // View › Screen Mode › Full Screen Mode: only the image, on black (F or Esc returns).
         screen_picker::show(&ctx);
         if screen_picker::busy(&ctx) && screen_picker::showing(&ctx) {
@@ -1143,6 +1185,9 @@ impl eframe::App for PhotocraftApp {
             ui.disable();
             ui.set_opacity(1.0);
         }
+        // The OS title bar (and the taskbar / Alt-Tab entry) follows the active file; with the
+        // system title bar this is where the document name lives, as the in-app title is hidden.
+        panels::sync_window_title(self, &ctx);
         let chrome = !self.ui.view.hides_chrome();
         if !chrome && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
             let _ = menus::invoke(self, &ctx, "view.screenMode.standard", serde_json::json!({}));
@@ -1503,6 +1548,30 @@ impl PhotocraftApp {
     }
 }
 
+/// The New Document dialog's key in the preferences' `dialogs` map.
+const NEW_DOCUMENT: &str = "file.new";
+
+/// New Document fields its OK remembers (#1810): the size, resolution, mode, depth, background and
+/// display units. Not the name, the preset or the clipboard size.
+const NEW_DOCUMENT_REMEMBERED: [&str; 8] = ["width", "height", "resolution", "mode", "depth", "background", "__unit", "__resUnit"];
+
+/// A remembered value the dialog can show (a corrupt preference is ignored).
+fn remembered_new_document_value(key: &str, v: &serde_json::Value) -> bool {
+    match key {
+        "width" | "height" => v.as_u64().is_some_and(|n| (1..=300_000).contains(&n)),
+        "resolution" => v.as_f64().is_some_and(|r| r.is_finite() && r > 0.0 && r <= 30_000.0),
+        "depth" => v.as_u64().is_some_and(|d| matches!(d, 1 | 8 | 16 | 32)),
+        _ => v.as_str().is_some_and(|s| !s.is_empty() && s.len() <= 64),
+    }
+}
+
+/// Remember the New Document fields `f` its OK used, for the next New Document.
+pub(crate) fn remember_new_document(app: &mut PhotocraftApp, f: &serde_json::Map<String, serde_json::Value>) {
+    let kept: serde_json::Map<String, serde_json::Value> =
+        NEW_DOCUMENT_REMEMBERED.iter().filter_map(|k| f.get(*k).filter(|v| remembered_new_document_value(k, v)).map(|v| (k.to_string(), v.clone()))).collect();
+    app.session.prefs.edit(|p| p.dialogs.insert(NEW_DOCUMENT.into(), serde_json::Value::Object(kept)));
+}
+
 fn clip_signature(w: u32, h: u32, px: &[u8]) -> u64 {
     let mut sig = (w as u64) << 32 | h as u64;
     for b in px.iter().step_by(997) {
@@ -1527,11 +1596,19 @@ impl PhotocraftApp {
         }
     }
 
-    /// File › New's fields: the defaults, plus the Clipboard preset (the clipboard image's size,
-    /// selected) when the clipboard holds an image. Opening the dialog is an explicit request, so
-    /// the OS clipboard is read here, as for a paste.
+    /// File › New's fields: the defaults, then the settings of the last document made with the
+    /// dialog (Photoshop starts from them, #1810), then the Clipboard preset (the clipboard image's
+    /// size, selected) when the clipboard holds an image. Opening the dialog is an explicit
+    /// request, so the OS clipboard is read here, as for a paste.
     pub(crate) fn new_document_fields(&mut self) -> serde_json::Map<String, serde_json::Value> {
         let mut f = crate::state::UiState::new_document_fields();
+        if let Some(serde_json::Value::Object(saved)) = self.session.prefs().dialogs.get(NEW_DOCUMENT) {
+            for k in NEW_DOCUMENT_REMEMBERED {
+                if let Some(v) = saved.get(k).filter(|v| remembered_new_document_value(k, v)) {
+                    f.insert(k.into(), v.clone());
+                }
+            }
+        }
         self.import_os_clipboard();
         if let Some(c) = self.session.clipboard.as_ref().filter(|c| !c.bounds.is_empty()) {
             crate::new_doc_ui::set_clipboard(&mut f, c.bounds.width(), c.bounds.height());
@@ -1573,6 +1650,9 @@ mod transform_undo_tests;
 
 #[cfg(test)]
 mod move_auto_select_tests;
+
+#[cfg(test)]
+mod new_doc_remember_tests;
 
 #[cfg(test)]
 mod hidden_layer_tests;

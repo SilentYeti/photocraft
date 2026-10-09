@@ -132,7 +132,10 @@ fn all_pdn_blend_modes_and_layer_properties_import_and_save_natively() {
         for compressed in [false, true] {
             let bytes = fixture(&modes, legacy, compressed);
             // Detection must work without an extension too.
-            let doc = crate::import("sample", &bytes).unwrap().document;
+            let imported = crate::import("sample", &bytes).unwrap();
+            assert!(imported.source_read_only);
+            assert!(!imported.preview_only);
+            let doc = imported.document;
             assert_eq!(doc.layers.len(), 14);
             assert_eq!((doc.size.width, doc.size.height), (2, 2));
             for (i, layer) in doc.layers.iter().enumerate() {

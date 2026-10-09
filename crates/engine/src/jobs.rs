@@ -427,6 +427,9 @@ impl Session {
             },
             move |s, r: photocraft_io::ImportResult| {
                 let (index, color) = s.open_document(r.document, None);
+                if let Some(st) = s.active_mut() {
+                    st.source_read_only = r.source_read_only;
+                }
                 Ok(json!({"document": index, "name": name_a, "warnings": r.warnings, "color": color}))
             },
         )
@@ -599,6 +602,9 @@ impl Session {
         // effect.
         if let Some(gate) = self.authorize {
             gate(id, &params)?;
+        }
+        if id == "file.new" {
+            crate::document_preset_cmds::validate_new_params(self, &params)?;
         }
         // A floating selection drops before any other command (Undo puts it back instead).
         if let Some(v) = crate::float_cmds::before_command(self, id)? {
