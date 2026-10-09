@@ -923,8 +923,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
                         ui.horizontal(|ui| {
                             ui.label(RichText::new(tl!(&label)).color(t.text_dim));
                             let mut cur = disp.get(key).and_then(Value::as_str).unwrap_or("Normal").to_string();
-                            let opts: Vec<(String, &str)> =
-                                photocraft_color::BlendMode::LAYER_MODES.iter().map(|m| (m.label().to_string(), m.label())).collect();
+                            let opts: Vec<(String, &str)> = photocraft_color::BlendMode::layer_modes().map(|m| (m.label().to_string(), m.label())).collect();
                             if widgets::dropdown(ui, &format!("fx-blend-{sel_kind}"), &mut cur, &opts, 150.0) {
                                 let value = json!(cur);
                                 disp[key] = value.clone();
@@ -1082,7 +1081,7 @@ fn blending_page(ui: &mut egui::Ui, p: &mut Value, names: &[String]) {
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Blend Mode")).color(t.text_dim));
         let mut cur = p.get("blend").and_then(Value::as_str).unwrap_or("Normal").to_string();
-        let opts: Vec<(String, &str)> = photocraft_color::BlendMode::LAYER_MODES.iter().map(|m| (m.label().to_string(), m.label())).collect();
+        let opts: Vec<(String, &str)> = photocraft_color::BlendMode::layer_modes().map(|m| (m.label().to_string(), m.label())).collect();
         if widgets::dropdown(ui, "fx-blend-blendingOptions", &mut cur, &opts, 150.0) {
             p["blend"] = json!(cur);
         }

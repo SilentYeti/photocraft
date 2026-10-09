@@ -187,7 +187,7 @@ Every screenshot here is the real app at work on public-domain art, rendered off
     </td>
     <td width="33%" valign="top">
       <h4>🗃️ Layers, done properly</h4>
-      Groups, clipping masks, pixel and vector masks, fill layers (solid, gradient and pattern), adjustment layers, live smart objects with smart filters and lossless transforms and warps, multi-layer selection with align, distribute and link, alpha channels and Quick Mask, 27 blend modes, opacity and fill, locks, colour labels, layer filters, merge, flatten, rasterize, Layer via Copy/Cut, Paste Into.
+      Groups, clipping masks, pixel and vector masks, fill layers (solid, gradient and pattern), adjustment layers, live smart objects with smart filters and lossless transforms and warps, multi-layer selection with align, distribute and link, alpha channels and Quick Mask, 27 Photoshop blend modes plus six Paint.NET variants, opacity and fill, locks, colour labels, layer filters, merge, flatten, rasterize, Layer via Copy/Cut, Paste Into.
     </td>
   </tr>
   <tr>
@@ -199,7 +199,7 @@ Every screenshot here is the real app at work on public-domain art, rendered off
     </td>
     <td width="33%" valign="top">
       <h4>🗂️ Formats</h4>
-      PSD and PSB, layered TIFF (Photoshop's layer data in the TIFF, read and written in either byte order), SVG (opens as shape layers, places as a vector Smart Object), plus flat PNG, JPEG, TIFF, WebP (lossy and lossless), GIF, BMP, TGA, ICO, QOI, PNM, OpenEXR, Radiance HDR and AVIF, with symmetric read and write at 8, 16 and 32 bits, HEIC photos from iPhone and Mac (read; in official builds, an optional <code>--features heif</code> build feature), and the native <code>.pcraft</code> format.
+      PSD and PSB, layered TIFF (Photoshop's layer data in the TIFF, read and written in either byte order), <a href="docs/pdn.md">Paint.NET PDN3 (read, with editable layers and all 14 blend modes)</a>, SVG (opens as shape layers, places as a vector Smart Object), plus flat PNG, JPEG, TIFF, WebP (lossy and lossless), GIF, BMP, TGA, ICO, QOI, PNM, OpenEXR, Radiance HDR and AVIF, with symmetric read and write at 8, 16 and 32 bits, HEIC photos from iPhone and Mac (read; in official builds, an optional <code>--features heif</code> build feature), and the native <code>.pcraft</code> format.
     </td>
     <td width="33%" valign="top">
       <h4>🪄 The everyday essentials</h4>

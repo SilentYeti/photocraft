@@ -538,7 +538,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         opt_label(ui, tl!("Mode"));
                         let mut mode = b.mode;
-                        let opts: Vec<(BlendMode, &str)> = BlendMode::LAYER_MODES.iter().map(|m| (*m, m.label())).collect();
+                        let opts: Vec<(BlendMode, &str)> = BlendMode::layer_modes().map(|m| (m, m.label())).collect();
                         if widgets::dropdown(ui, "brush-mode", &mut mode, &opts, 96.0) {
                             b.mode = mode;
                         }
@@ -572,7 +572,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         opt_label(ui, tl!("Mode"));
                         let mut mode = b.mode;
-                        let opts: Vec<(BlendMode, &str)> = BlendMode::LAYER_MODES.iter().map(|m| (*m, m.label())).collect();
+                        let opts: Vec<(BlendMode, &str)> = BlendMode::layer_modes().map(|m| (m, m.label())).collect();
                         if widgets::dropdown(ui, "pencil-mode", &mut mode, &opts, 96.0) {
                             b.mode = mode;
                         }
@@ -765,7 +765,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         ui.spacing_mut().item_spacing.x = 8.0;
                         widgets::vline(ui, 22.0);
                         opt_label(ui, tl!("Mode"));
-                        let opts: Vec<(BlendMode, &str)> = BlendMode::LAYER_MODES.iter().map(|m| (*m, m.label())).collect();
+                        let opts: Vec<(BlendMode, &str)> = BlendMode::layer_modes().map(|m| (m, m.label())).collect();
                         widgets::dropdown(ui, "gradient-blend-mode", &mut app.ui.tool_options.gradient_blend_mode, &opts, 96.0);
                         opt_label(ui, tl!("Opacity"));
                         widgets::value_field(ui, &mut app.ui.tool_options.fill_opacity, 1.0..=100.0, "%", 62.0);
@@ -1366,7 +1366,7 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
 }
 
 fn blend_options(groups: bool) -> Vec<(BlendMode, &'static str)> {
-    std::iter::once(BlendMode::PassThrough).filter(|_| groups).chain(BlendMode::LAYER_MODES).map(|m| (m, m.label())).collect()
+    std::iter::once(BlendMode::PassThrough).filter(|_| groups).chain(BlendMode::layer_modes()).map(|m| (m, m.label())).collect()
 }
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge.

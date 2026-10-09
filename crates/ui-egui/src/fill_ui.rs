@@ -180,7 +180,7 @@ pub fn body(app: &PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Value>) 
     ui.horizontal(|ui| {
         label(ui, tl!("Mode:"));
         let mut mode = get_str(f, "mode", "normal");
-        let opts: Vec<(String, &str)> = photocraft_color::BlendMode::LAYER_MODES.iter().map(|m| (mode_key(*m), m.label())).collect();
+        let opts: Vec<(String, &str)> = photocraft_color::BlendMode::layer_modes().map(|m| (mode_key(m), m.label())).collect();
         if crate::widgets::dropdown(ui, "fill-mode", &mut mode, &opts, 170.0) {
             f.insert("mode".into(), json!(mode));
         }

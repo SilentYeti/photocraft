@@ -32,6 +32,7 @@ photocraft-vector = { workspace = true }
 photocraft-format = { path = "../format" }
 thiserror = { workspace = true }
 serde_json = { workspace = true }
+flate2 = { workspace = true }
 blake3 = { version = "1.8", default-features = false, features = ["pure"] }
 # SVG import (svg.rs): usvg parses, resvg rasterises what the shape model can't hold. Both are
 # already in the tree through the UI's icon loader; text shaping needs the fonts feature set.

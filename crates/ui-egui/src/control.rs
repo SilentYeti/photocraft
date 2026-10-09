@@ -282,7 +282,9 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
             }
             let gradient_blend = if let Some(value) = p.get("gradientBlendMode") {
                 let Some(name) = value.as_str() else { return err("gradientBlendMode must be a blend mode name") };
-                let Some(mode) = photocraft_engine::commands::blend_from_str(name).filter(|m| photocraft_color::BlendMode::LAYER_MODES.contains(m)) else {
+                let Some(mode) =
+                    photocraft_engine::commands::blend_from_str(name).filter(|m| photocraft_color::BlendMode::layer_modes().any(|mode| mode == *m))
+                else {
                     return err(format!("unknown gradient blend mode `{name}`"));
                 };
                 Some(mode)
