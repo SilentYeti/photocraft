@@ -2705,3 +2705,11 @@ fontWeight	Italic	Itálico
 	Color to Alpha…	Cor para alfa…
 	Transparency Threshold	Limiar de transparência
 	Opacity Threshold	Limiar de opacidade
+
+# Imported Paint.NET layer blend modes
+	Reflect	Reflexo
+	Glow	Brilho
+	Negation	Negação
+	XOR	XOR
+	Color Burn (Paint.NET)	Superexposição de cores (Paint.NET)
+	Color Dodge (Paint.NET)	Subexposição de cores (Paint.NET)

@@ -1560,8 +1560,38 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
     ("layer.setProps".into(), json!({"layer": l.id.0, "locks": locks}))
 }
 
-fn blend_options(groups: bool) -> Vec<(BlendMode, &'static str)> {
-    std::iter::once(BlendMode::PassThrough).filter(|_| groups).chain(BlendMode::LAYER_MODES).map(|m| (m, m.label())).collect()
+pub(crate) fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static str)> {
+    std::iter::once(BlendMode::PassThrough)
+        .filter(|_| groups)
+        .chain(BlendMode::layer_modes().filter(|m| m.has_psd_equivalent() || !current.has_psd_equivalent()))
+        .map(|m| (m, m.label()))
+        .collect()
+}
+
+#[cfg(test)]
+mod blend_menu_tests {
+    use super::*;
+
+    #[test]
+    fn standard_layers_keep_photoshop_choices() {
+        for current in BlendMode::LAYER_MODES {
+            for group in [false, true] {
+                let modes: Vec<_> = blend_options(group, current).into_iter().map(|(mode, _)| mode).collect();
+                let expected: Vec<_> = std::iter::once(BlendMode::PassThrough).filter(|_| group).chain(BlendMode::LAYER_MODES).collect();
+                assert_eq!(modes, expected);
+            }
+        }
+        assert_eq!(blend_options(true, BlendMode::PassThrough).len(), 28);
+    }
+
+    #[test]
+    fn paint_net_choices_require_an_existing_paint_net_layer_mode() {
+        for current in BlendMode::PAINT_NET_MODES {
+            let modes: Vec<_> = blend_options(false, current).into_iter().map(|(mode, _)| mode).collect();
+            assert_eq!(modes, BlendMode::layer_modes().collect::<Vec<_>>());
+        }
+        assert!(blend_options(false, BlendMode::Normal).into_iter().all(|(mode, _)| mode.has_psd_equivalent()));
+    }
 }
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.
@@ -1642,7 +1672,7 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let opacity_label = if t.pro { tl!("Opacity:") } else { tl!("Opacity") };
                 let right = (body_text_width(ui, opacity_label) + LAYER_PCT_W + 2.0 * ui.spacing().item_spacing.x + 16.0).max(150.0);
                 let w = ui.available_width() - right;
-                let (chosen, hovered) = widgets::dropdown_hovered(ui, "blend", &mut m, &blend_options(l.is_group()), w.max(100.0));
+                let (chosen, hovered) = widgets::dropdown_hovered(ui, "blend", &mut m, &blend_options(l.is_group(), l.blend), w.max(100.0));
                 if chosen {
                     actions.push(("layer.setProps".into(), json!({"layer": l.id.0, "blend": m.label()})));
                 }

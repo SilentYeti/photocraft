@@ -2685,3 +2685,11 @@ fontWeight	Italic	Miring
 	Color to Alpha…	Warna ke Alpha…
 	Transparency Threshold	Ambang transparansi
 	Opacity Threshold	Ambang opasitas
+
+# Imported Paint.NET layer blend modes
+	Reflect	Refleksi
+	Glow	Pendar
+	Negation	Negasi
+	XOR	XOR
+	Color Burn (Paint.NET)	Color Burn (Paint.NET)
+	Color Dodge (Paint.NET)	Color Dodge (Paint.NET)

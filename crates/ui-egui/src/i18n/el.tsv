@@ -3388,3 +3388,11 @@ fontWeight	Thin	Πολύ λεπτά
 	Color to Alpha…	Χρώμα σε άλφα…
 	Transparency Threshold	Κατώφλι διαφάνειας
 	Opacity Threshold	Κατώφλι αδιαφάνειας
+
+# Imported Paint.NET layer blend modes
+	Reflect	Αντανάκλαση
+	Glow	Λάμψη
+	Negation	Άρνηση
+	XOR	XOR
+	Color Burn (Paint.NET)	Κάψιμο χρώματος (Paint.NET)
+	Color Dodge (Paint.NET)	Φωτισμός χρώματος (Paint.NET)

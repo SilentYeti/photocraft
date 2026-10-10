@@ -1130,6 +1130,12 @@ mod tests {
         let bad = call(&mut app, &ctx, "ui.set", json!({"gradientBlendMode": "nonsense", "gradientClassic": false}));
         assert_eq!(bad["ok"], false, "{bad}");
         assert!(app.ui.tool_options.gradient_classic, "invalid mode must not change options");
+        for mode in photocraft_color::BlendMode::PAINT_NET_MODES {
+            let bad = call(&mut app, &ctx, "ui.set", json!({"gradientBlendMode": mode.label(), "gradientClassic": false}));
+            assert_eq!(bad["ok"], false, "{bad}");
+            assert_eq!(app.ui.tool_options.gradient_blend_mode, photocraft_color::BlendMode::Difference);
+            assert!(app.ui.tool_options.gradient_classic);
+        }
     }
 
     #[test]

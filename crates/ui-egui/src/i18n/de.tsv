@@ -2315,3 +2315,11 @@ fontWeight	Italic	Kursiv
 	Color to Alpha…	Farbe zu Alpha…
 	Transparency Threshold	Transparenz-Schwellenwert
 	Opacity Threshold	Deckkraft-Schwellenwert
+
+# Imported Paint.NET layer blend modes
+	Reflect	Reflektieren
+	Glow	Leuchten
+	Negation	Negation
+	XOR	XOR
+	Color Burn (Paint.NET)	Farbig nachbelichten (Paint.NET)
+	Color Dodge (Paint.NET)	Farbig abwedeln (Paint.NET)

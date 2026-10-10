@@ -2550,3 +2550,11 @@ fontWeight	Italic	Курсив
 	Color to Alpha…	Цвет в альфа-канал…
 	Transparency Threshold	Порог прозрачности
 	Opacity Threshold	Порог непрозрачности
+
+# Imported Paint.NET layer blend modes
+	Reflect	Отражение
+	Glow	Свечение
+	Negation	Отрицание
+	XOR	Исключающее ИЛИ
+	Color Burn (Paint.NET)	Затемнение основы (Paint.NET)
+	Color Dodge (Paint.NET)	Осветление основы (Paint.NET)

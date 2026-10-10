@@ -2277,3 +2277,11 @@ fontWeight	Italic	Kurzíva
 	Color to Alpha…	Barva na alfu…
 	Transparency Threshold	Práh průhlednosti
 	Opacity Threshold	Práh krytí
+
+# Imported Paint.NET layer blend modes
+	Reflect	Odraz
+	Glow	Záře
+	Negation	Negace
+	XOR	XOR
+	Color Burn (Paint.NET)	Ztmavit barvy (Paint.NET)
+	Color Dodge (Paint.NET)	Zesvětlit barvy (Paint.NET)

@@ -1082,7 +1082,8 @@ fn blending_page(ui: &mut egui::Ui, p: &mut Value, names: &[String]) {
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Blend Mode")).color(t.text_dim));
         let mut cur = p.get("blend").and_then(Value::as_str).unwrap_or("Normal").to_string();
-        let opts: Vec<(String, &str)> = photocraft_color::BlendMode::LAYER_MODES.iter().map(|m| (m.label().to_string(), m.label())).collect();
+        let mode = photocraft_engine::commands::blend_from_str(&cur).unwrap_or(photocraft_color::BlendMode::Normal);
+        let opts: Vec<(String, &str)> = crate::panels::blend_options(false, mode).into_iter().map(|(m, label)| (m.label().to_string(), label)).collect();
         if widgets::dropdown(ui, "fx-blend-blendingOptions", &mut cur, &opts, 150.0) {
             p["blend"] = json!(cur);
         }

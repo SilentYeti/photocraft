@@ -2254,3 +2254,11 @@ fontWeight	Italic	斜體
 	Color to Alpha…	顏色轉為 Alpha…
 	Transparency Threshold	透明度臨界值
 	Opacity Threshold	不透明度臨界值
+
+# Imported Paint.NET layer blend modes
+	Reflect	反射
+	Glow	輝光
+	Negation	反相
+	XOR	互斥或
+	Color Burn (Paint.NET)	加深顏色 (Paint.NET)
+	Color Dodge (Paint.NET)	加亮顏色 (Paint.NET)

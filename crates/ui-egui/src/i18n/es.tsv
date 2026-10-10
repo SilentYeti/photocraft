@@ -2345,3 +2345,11 @@ fontWeight	Italic	Cursiva
 	Color to Alpha…	Color a alfa…
 	Transparency Threshold	Umbral de transparencia
 	Opacity Threshold	Umbral de opacidad
+
+# Imported Paint.NET layer blend modes
+	Reflect	Reflejo
+	Glow	Resplandor
+	Negation	Negación
+	XOR	XOR
+	Color Burn (Paint.NET)	Sobreexponer color (Paint.NET)
+	Color Dodge (Paint.NET)	Aclarar color (Paint.NET)
